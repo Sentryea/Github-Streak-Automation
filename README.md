@@ -1,5 +1,7 @@
 # GitHub Streak Automation
 
+[简体中文](README.md) | [English](README.en.md)
+
 让 GitHub Actions 每天自动更新仓库里的日志文件并推送一次提交，无需在自己的电脑上运行定时任务。
 
 [![Daily workflow](https://github.com/Sentryea/Github-Streak-Automation/actions/workflows/daily-commit.yml/badge.svg)](https://github.com/Sentryea/Github-Streak-Automation/actions/workflows/daily-commit.yml)
