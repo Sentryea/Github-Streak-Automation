@@ -28,8 +28,10 @@ jobs:
     env:
       STREAK_FILE: activity/streak.md
       STREAK_TIMEZONE: Asia/Shanghai
-      GIT_AUTHOR_NAME: ${{ vars.GIT_AUTHOR_NAME || github.actor }}
-      GIT_AUTHOR_EMAIL: ${{ vars.GIT_AUTHOR_EMAIL || format('{0}@users.noreply.github.com', github.actor) }}
+      # The numeric-ID noreply form keeps working after a GitHub username change,
+      # unlike the legacy <login>@users.noreply.github.com form.
+      GIT_AUTHOR_NAME: ${{ vars.GIT_AUTHOR_NAME || secrets.GIT_AUTHOR_NAME || github.actor }}
+      GIT_AUTHOR_EMAIL: ${{ vars.GIT_AUTHOR_EMAIL || secrets.GIT_AUTHOR_EMAIL || format('{0}+{1}@users.noreply.github.com', github.actor_id, github.actor) }}
       FORCE_UPDATE: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
     steps:
       - name: Checkout repository
