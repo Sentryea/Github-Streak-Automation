@@ -23,16 +23,18 @@ The workflow will run on its schedule after that. If your default branch is prot
 - **Avoids duplicates:** Skips a date that already has an automated entry. You can select `force=true` when running the workflow manually to add another entry.
 - **Commits changes:** Creates and pushes a commit only when the log file changes.
 
-To have these commits appear on your GitHub contribution graph, set `GIT_AUTHOR_EMAIL` to an email verified with your GitHub account or to the noreply address shown in your account settings. Contributions from private repositories are also subject to your profile's private-contribution settings.
+To have these commits appear on your GitHub contribution graph, `GIT_AUTHOR_EMAIL` must be an address that resolves to your account. Use the **ID-based noreply form** `<numeric-id>+<username>@users.noreply.github.com` (for example `100594650+Sentryea@users.noreply.github.com`; find your ID at https://github.com/settings/users). This form keeps working after you **change your GitHub username**, while the legacy `<username>@users.noreply.github.com` breaks with the old name and drops your commits off the contribution graph. Contributions from private repositories are also subject to your profile's private-contribution settings.
 
 ## Configuration
 
-Optionally add these repository variables under **Settings → Secrets and variables → Actions → Variables**. If you leave them unset, the workflow uses its built-in defaults.
+Optionally add these under **Settings → Secrets and variables → Actions**, either as **Variables** or as **Secrets** — the workflow reads Variables first, then Secrets. If you leave them unset, the workflow uses its built-in defaults.
 
 | Variable | Purpose | Example |
 | --- | --- | --- |
 | `GIT_AUTHOR_NAME` | Display name for automated commits | `octocat` |
-| `GIT_AUTHOR_EMAIL` | Email address for automated commits | A verified email shown in your GitHub account settings |
+| `GIT_AUTHOR_EMAIL` | Email address for automated commits | `100594650+octocat@users.noreply.github.com` |
+
+When `GIT_AUTHOR_EMAIL` is unset, the workflow falls back to `${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com` — the ID-based noreply form, which keeps commits attributed after a username change.
 
 The schedule, log path, and time zone are set in `.github/workflows/daily-commit.yml`:
 
@@ -88,5 +90,21 @@ The corresponding environment variables are `STREAK_FILE`, `STREAK_TIMEZONE`, an
 **The push failed with a permission error.** Check that **Settings → Actions → General → Workflow permissions** is set to **Read and write permissions**, and that your default branch's protection rules allow the workflow to push.
 
 **The commit does not appear on your contribution graph.** Check that `GIT_AUTHOR_EMAIL` is associated with your GitHub account and that the commit is on the default branch. For private repositories, also check your profile's private-contribution settings.
+
+**Your contribution streak broke after changing your GitHub username.** GitHub resolves commit authorship by email, so a legacy noreply address (`<old-username>@users.noreply.github.com`) dies with the old name and your commits stop counting. Fix it in two steps: point `GIT_AUTHOR_EMAIL` at the ID-based form (`<numeric-id>+<new-username>@users.noreply.github.com`) so future commits stay attributed, then rewrite the author email of existing history to bring the missing days back.
+
+`git filter-repo` rewrites history while **preserving each commit's original author date**, so GitHub credits the commits to the days they were actually made:
+
+```bash
+git filter-repo --force --commit-callback '
+commit.author_name = b"your-username"
+commit.author_email = b"numeric-id+your-username@users.noreply.github.com"
+commit.committer_name = b"your-username"
+commit.committer_email = b"numeric-id+your-username@users.noreply.github.com"
+'
+git push --force-with-lease origin main
+```
+
+Back up first (`git branch backup/pre-identity-rewrite && git push origin backup/pre-identity-rewrite`) and delete the backup once you have verified the result.
 
 Each scheduled run makes a real change to a repository file and pushes a commit. Choose a schedule and log location that suit your use case.
